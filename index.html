@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>실전형 모바일 안면 인식 (Pro)</title>
+    <title>보안 강화 안면 인식 시스템</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+    <!-- Google Identity Services (OAuth 2.0) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow-x: hidden; }
         .video-container {
@@ -38,6 +40,9 @@
             0% { top: 0%; }
             100% { top: 100%; }
         }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-slate-950 text-white min-h-screen flex flex-col">
@@ -45,199 +50,263 @@
     <header class="p-6 bg-slate-900/50 backdrop-blur-xl border-b border-white/10">
         <div class="flex justify-between items-end">
             <div>
-                <p class="text-blue-400 text-xs font-bold tracking-widest uppercase">System v2.2 (Fast Proxy)</p>
-                <h1 class="text-2xl font-black">AI Face Scanner</h1>
+                <p class="text-yellow-400 text-xs font-bold tracking-widest uppercase">Secure Access v3.5</p>
+                <h1 class="text-2xl font-black">Secure Face ID</h1>
             </div>
-            <div id="status-dot" class="flex items-center gap-2 text-[10px] text-slate-400">
-                <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                INIT...
+            <div id="status-dot" class="flex items-center gap-2 text-[10px] text-slate-400 font-bold">
+                <span id="dot" class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                <span id="status-text">LOGIN REQUIRED</span>
             </div>
         </div>
     </header>
 
     <main class="flex-1 p-4 space-y-6 max-w-md mx-auto w-full">
-        <div class="video-container border border-white/10">
-            <video id="webcam" autoplay playsinline muted></video>
-            <canvas id="overlay-canvas"></canvas>
-            <div id="scanner" class="scanning-bar"></div>
-            
-            <div id="ui-overlay" class="absolute inset-0 z-30 bg-slate-900 flex flex-col items-center justify-center p-8 text-center transition-opacity duration-500">
-                <div id="main-loader" class="w-10 h-10 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                <h3 id="overlay-title" class="text-lg font-bold">시스템 초기화 중</h3>
-                <p id="overlay-desc" class="text-xs text-slate-400 mt-2 max-w-[200px]">클라우드 데이터를 고속으로 불러오고 있습니다.</p>
-                <button id="retry-btn" class="hidden mt-6 px-6 py-2 bg-white text-black rounded-full font-bold text-sm">새로고침</button>
-            </div>
-        </div>
-
-        <div class="flex gap-3">
-            <button id="start-btn" disabled class="flex-1 bg-blue-600 disabled:bg-slate-800 disabled:text-slate-500 py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-all">
-                카메라 켜기
-            </button>
-            <button id="switch-btn" class="w-16 bg-slate-800 rounded-2xl flex items-center justify-center active:scale-95 transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        <!-- 로그인 섹션 (시작 화면) -->
+        <div id="login-section" class="flex flex-col items-center justify-center p-10 bg-slate-900 rounded-3xl border border-white/10 text-center">
+            <div class="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 border border-blue-500/20">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
+            </div>
+            <h2 class="text-xl font-bold mb-2">데이터 보안 접속</h2>
+            <p class="text-sm text-slate-400 mb-8 leading-relaxed">구글 시트의 제한된 데이터에 접근하기 위해 권한이 있는 계정으로 로그인해 주세요.</p>
+            
+            <button id="google-login-btn" class="w-full bg-white text-black px-6 py-4 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-slate-100 transition-all shadow-xl active:scale-95">
+                <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" class="w-5 h-5" alt="Google">
+                구글 계정으로 로그인
             </button>
         </div>
 
-        <div id="result-panel" class="bg-white/5 rounded-3xl p-6 border border-white/10 hidden">
-            <div class="flex items-center gap-5">
-                <div class="relative">
-                    <img id="db-photo" src="" class="w-20 h-20 rounded-2xl object-cover bg-slate-800 border-2 border-blue-500/50" crossorigin="anonymous">
-                    <div class="absolute -bottom-2 -right-2 bg-blue-500 rounded-full p-1.5">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
+        <!-- 메인 앱 섹션 (로그인 후 표시) -->
+        <div id="app-section" class="hidden space-y-6">
+            <div class="video-container border border-white/10">
+                <video id="webcam" autoplay playsinline muted></video>
+                <canvas id="overlay-canvas"></canvas>
+                <div id="scanner" class="scanning-bar"></div>
+                
+                <div id="ui-overlay" class="absolute inset-0 z-30 bg-slate-900 flex flex-col items-center justify-center p-8 text-center transition-opacity duration-500">
+                    <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <h3 class="text-lg font-bold">보안 데이터 동기화</h3>
+                    <p class="text-xs text-slate-400 mt-2">인증 정보를 확인하여 데이터를 불러오는 중입니다.</p>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button id="start-btn" disabled class="flex-1 bg-blue-600 disabled:bg-slate-800 disabled:text-slate-500 py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-all">
+                    카메라 시작 대기중
+                </button>
+                <button id="switch-btn" class="w-16 bg-slate-800 rounded-2xl flex items-center justify-center active:scale-95 transition-all text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+            </div>
+
+            <div id="result-panel" class="bg-white/5 rounded-3xl p-6 border border-white/10 hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div class="flex items-center gap-5">
+                    <div class="relative">
+                        <img id="db-photo" src="" class="w-20 h-20 rounded-2xl object-cover bg-slate-800 border-2 border-blue-500/50" crossorigin="anonymous">
+                        <div class="absolute -bottom-2 -right-2 bg-blue-500 rounded-full p-1.5 shadow-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 id="user-name" class="text-2xl font-bold">---</h2>
+                        <p id="user-dept" class="text-blue-400 text-sm font-medium tracking-wide italic">---</p>
+                        <p id="user-id" class="text-[10px] text-slate-500 mt-1 font-mono uppercase tracking-tighter">ID: ---</p>
                     </div>
                 </div>
-                <div>
-                    <h2 id="user-name" class="text-2xl font-bold">---</h2>
-                    <p id="user-dept" class="text-blue-400 text-sm font-medium tracking-wide italic">---</p>
-                    <p id="user-id" class="text-[10px] text-slate-500 mt-1 font-mono uppercase tracking-tighter">ID: ---</p>
+            </div>
+            
+            <div class="bg-black/40 rounded-2xl p-4 border border-white/5">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Security Log</span>
+                    <button onclick="logout()" class="text-[10px] text-red-500 font-bold hover:underline">LOGOUT</button>
                 </div>
-            </div>
-        </div>
-
-        <div class="bg-black/40 rounded-2xl p-4 border border-white/5">
-            <div class="flex justify-between items-center mb-2">
-                <span class="text-[10px] text-slate-400 font-bold">SYSTEM LOG</span>
-                <span id="log-count" class="text-[9px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-400">0</span>
-            </div>
-            <div id="log" class="text-[10px] font-mono text-slate-400 h-24 overflow-y-auto space-y-1 custom-scrollbar">
-                <div class="text-blue-400">> Booting System...</div>
+                <div id="log" class="text-[10px] font-mono text-slate-400 h-24 overflow-y-auto space-y-1 custom-scrollbar">
+                    <div class="text-blue-400">> System initialized. Login required.</div>
+                </div>
             </div>
         </div>
     </main>
 
     <script>
-        const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1Nm-cjEZS-Ob-1FDMItiCxHVes4Yknkep/export?format=csv";
+        // =================================================================
+        // [필수 설정 항목]
+        // =================================================================
         
-        let labeledDescriptors = []; 
+        // 1. Google Cloud Console에서 발급받은 '클라이언트 ID'를 여기에 입력하세요.
+        const CLIENT_ID = '88725170403-lkp5homgvhjv50ffoadde8u43sfr8dba.apps.googleusercontent.com'; 
+        
+        // 2. 구글 시트 ID
+        const SPREADSHEET_ID = '1Nm-cjEZS-Ob-1FDMItiCxHVes4Yknkep';
+        
+        // 3. 시트 탭 이름 (기본값: '시트1')
+        const SHEET_NAME = '시트1';
+        
+        // =================================================================
+
+        let tokenClient;
+        let accessToken = null;
+        let labeledDescriptors = [];
         let faceMatcher = null;
-        let isProcessing = false;
         let currentFacingMode = 'user';
-        let logCounter = 0;
 
         const video = document.getElementById('webcam');
         const canvas = document.getElementById('overlay-canvas');
         const logEl = document.getElementById('log');
 
         function addLog(m, type = 'info') {
-            logCounter++;
-            document.getElementById('log-count').textContent = logCounter;
-            
             const d = document.createElement('div');
             d.textContent = `> ${m}`;
             if (type === 'error') d.classList.add('text-red-400');
-            else if (type === 'success') d.classList.add('text-green-400');
-            
+            else if (type === 'success') d.classList.add('text-emerald-400');
             logEl.appendChild(d);
             logEl.scrollTop = logEl.scrollHeight;
         }
 
+        // 1. 페이지 로드 시 구글 로그인 설정
+        window.onload = function() {
+            try {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: 'https://www.googleapis.com/auth/spreadsheets.readonly https://www.googleapis.com/auth/drive.readonly',
+                    callback: async (response) => {
+                        if (response.error !== undefined) {
+                            addLog("Login Error: " + response.error, 'error');
+                            throw (response);
+                        }
+                        accessToken = response.access_token;
+                        
+                        // 화면 전환
+                        document.getElementById('login-section').classList.add('hidden');
+                        document.getElementById('app-section').classList.remove('hidden');
+                        document.getElementById('dot').classList.replace('bg-red-500', 'bg-yellow-500');
+                        document.getElementById('status-text').textContent = 'SYNCING...';
+                        
+                        addLog("로그인 인증 성공. 토큰을 획득했습니다.", 'success');
+                        await initAI();
+                    },
+                });
+            } catch (e) {
+                addLog("OAuth 클라이언트 초기화 실패.", 'error');
+            }
+        };
+
+        // 로그인 버튼 이벤트
+        document.getElementById('google-login-btn').addEventListener('click', () => {
+            tokenClient.requestAccessToken();
+        });
+
+        // 2. AI 모델 로드
         async function initAI() {
             try {
-                // 모델 로드
                 const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
                 await Promise.all([
                     faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
                     faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
                     faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
                 ]);
-                addLog("AI Core Loaded.", 'success');
-                loadCloudData();
+                addLog("AI 핵심 엔진 로드 완료.", 'success');
+                fetchPrivateData();
             } catch (err) {
-                addLog("AI Init Fail: " + err.message, 'error');
-                showError("AI 초기화 실패", "네트워크 상태를 확인해주세요.");
+                addLog("AI 로드 중 오류 발생: " + err.message, 'error');
             }
         }
 
-        async function loadCloudData() {
+        // 3. 비공개 시트 데이터 API 호출
+        async function fetchPrivateData() {
+            addLog("보안 시트 데이터를 동기화 중입니다...");
             try {
-                addLog("Downloading Sheet Data...");
-                const res = await fetch(SHEET_CSV_URL);
-                const data = await res.text();
-                const rows = data.split('\n').slice(1);
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}?majorDimension=ROWS`;
                 
-                const users = rows.map(r => {
-                    const cols = r.split(',').map(c => c.trim());
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+
+                if (!response.ok) throw new Error("접근 권한이 없습니다. (Status: " + response.status + ")");
+                
+                const result = await response.json();
+                const rows = result.values;
+                
+                if (!rows || rows.length < 2) throw new Error("데이터가 존재하지 않습니다.");
+
+                const users = rows.slice(1).map(cols => {
                     if (!cols[0]) return null;
-                    return {
-                        id: cols[0],
-                        name: cols[1],
-                        dept: cols[2],
-                        photoUrl: cols[3]
-                    };
+                    return { id: cols[0], name: cols[1], dept: cols[2], photoUrl: cols[3] };
                 }).filter(u => u && u.photoUrl);
 
-                addLog(`Analyzing ${users.length} photos...`);
+                addLog(`총 ${users.length}명의 데이터를 확인했습니다. 사진 분석 중...`);
+                await processFaceDescriptors(users);
 
-                // 병렬 처리 (타임아웃 적용)
-                let successCount = 0;
-                labeledDescriptors = await Promise.all(users.map(async user => {
-                    try {
-                        let targetUrl = user.photoUrl;
-                        
-                        // 구글 드라이브 ID 추출 및 변환 (더 강력한 파싱)
-                        if (targetUrl.includes("drive.google.com") || targetUrl.includes("id=")) {
-                            const idMatch = targetUrl.match(/[-\w]{25,}/);
-                            if (idMatch) {
-                                // 구글 드라이브 원본 대신 wsrv.nl 프록시 사용 (리사이징 & CORS 해결)
-                                // output=jpg, w=512 (속도 향상 핵심)
-                                targetUrl = `https://wsrv.nl/?url=https://drive.google.com/uc?id=${idMatch[0]}&output=jpg&w=512&q=80`;
-                            }
-                        } else {
-                            // 일반 URL도 프록시 경유
-                            targetUrl = `https://wsrv.nl/?url=${encodeURIComponent(user.photoUrl)}&output=jpg&w=512&q=80`;
-                        }
-                        
-                        // 타임아웃 10초 설정
-                        const imgPromise = faceapi.fetchImage(targetUrl);
-                        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 10000));
-                        
-                        const img = await Promise.race([imgPromise, timeoutPromise]);
-                        
-                        const fullDesc = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
-                        
-                        if (fullDesc) {
-                            successCount++;
-                            addLog(`OK: ${user.name}`, 'success');
-                            return new faceapi.LabeledFaceDescriptors(
-                                `${user.name}|${user.dept}|${user.id}|${targetUrl}`, 
-                                [fullDesc.descriptor]
-                            );
-                        } else {
-                            addLog(`Skip: ${user.name} (No Face)`, 'error');
-                            return null;
-                        }
-                    } catch (e) {
-                        addLog(`Skip: ${user.name} (${e.message})`, 'error');
-                        return null;
-                    }
-                }));
-
-                labeledDescriptors = labeledDescriptors.filter(d => d !== null);
-                
-                if (labeledDescriptors.length > 0) {
-                    faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.55);
-                    
-                    document.getElementById('ui-overlay').classList.add('hidden');
-                    document.getElementById('start-btn').disabled = false;
-                    document.getElementById('status-dot').innerHTML = '<span class="w-2 h-2 bg-emerald-500 rounded-full"></span> READY';
-                    addLog(`Ready! (${successCount}/${users.length} loaded)`, 'success');
-                } else {
-                    showError("데이터 로드 실패", "인식된 얼굴이 없습니다. 사진을 확인하세요.");
-                }
             } catch (err) {
-                addLog("Sheet Error: " + err.message, 'error');
-                showError("시트 오류", "링크가 올바르지 않습니다.");
+                addLog("데이터 연동 실패: " + err.message, 'error');
+            }
+        }
+
+        // 4. 얼굴 특징점 학습 및 이미지 로드
+        async function processFaceDescriptors(users) {
+            let successCount = 0;
+            labeledDescriptors = await Promise.all(users.map(async user => {
+                try {
+                    let finalImgUrl = user.photoUrl;
+
+                    // 구글 드라이브 비공개 파일 처리
+                    if (user.photoUrl.includes("drive.google.com")) {
+                        const idMatch = user.photoUrl.match(/id=([-\w]+)/) || user.photoUrl.match(/\/d\/([-\w]+)/);
+                        if (idMatch) {
+                            const fileId = idMatch[1];
+                            const driveUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+                            const imgRes = await fetch(driveUrl, {
+                                headers: { 'Authorization': `Bearer ${accessToken}` }
+                            });
+                            if (imgRes.ok) {
+                                const blob = await imgRes.blob();
+                                finalImgUrl = URL.createObjectURL(blob);
+                            }
+                        }
+                    } else {
+                        finalImgUrl = `https://wsrv.nl/?url=${encodeURIComponent(user.photoUrl)}&output=jpg&w=512`;
+                    }
+
+                    const img = await faceapi.fetchImage(finalImgUrl);
+                    const detection = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+                    
+                    if (detection) {
+                        successCount++;
+                        addLog(`학습 완료: ${user.name}`, 'success');
+                        return new faceapi.LabeledFaceDescriptors(
+                            `${user.name}|${user.dept}|${user.id}|${finalImgUrl}`, 
+                            [detection.descriptor]
+                        );
+                    }
+                    return null;
+                } catch (e) {
+                    addLog(`분석 실패: ${user.name}`, 'error');
+                    return null;
+                }
+            }));
+
+            labeledDescriptors = labeledDescriptors.filter(d => d !== null);
+            
+            if (labeledDescriptors.length > 0) {
+                faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.55);
+                document.getElementById('ui-overlay').classList.add('hidden');
+                document.getElementById('start-btn').disabled = false;
+                document.getElementById('start-btn').textContent = "카메라 시작";
+                document.getElementById('dot').classList.replace('bg-yellow-500', 'bg-emerald-500');
+                document.getElementById('dot').classList.remove('animate-pulse');
+                document.getElementById('status-text').textContent = 'SECURE READY';
+                addLog("시스템 준비 완료.", 'success');
+            } else {
+                addLog("데이터 로드 실패.", 'error');
             }
         }
 
         async function startCamera() {
-            if (video.srcObject) {
-                video.srcObject.getTracks().forEach(t => t.stop());
-            }
+            if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: currentFacingMode, width: { ideal: 1280 }, height: { ideal: 720 } }
@@ -249,41 +318,33 @@
                     canvas.height = video.videoHeight;
                     document.getElementById('scanner').style.display = 'block';
                     document.getElementById('start-btn').textContent = "스캔 중...";
-                    runFaceDetection();
+                    runRecognitionLoop();
                 };
-            } catch (err) {
-                alert("카메라 권한을 허용해주세요.");
-            }
+            } catch (err) { addLog("카메라 오류.", 'error'); }
         }
 
-        async function runFaceDetection() {
+        async function runRecognitionLoop() {
             const displaySize = { width: video.videoWidth, height: video.videoHeight };
             faceapi.matchDimensions(canvas, displaySize);
-
+            
             setInterval(async () => {
-                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-                    .withFaceLandmarks()
-                    .withFaceDescriptors();
-                
-                const resizedDetections = faceapi.resizeResults(detections, displaySize);
+                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
+                const resized = faceapi.resizeResults(detections, displaySize);
                 const ctx = canvas.getContext('2d');
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                resizedDetections.forEach(d => {
-                    const bestMatch = faceMatcher.findBestMatch(d.descriptor);
+                
+                resized.forEach(d => {
+                    const match = faceMatcher.findBestMatch(d.descriptor);
                     const box = d.detection.box;
-                    const label = bestMatch.toString();
+                    const label = match.toString();
                     const isUnknown = label.includes('unknown');
-
-                    const drawBox = new faceapi.draw.DrawBox(box, { 
+                    
+                    new faceapi.draw.DrawBox(box, { 
                         label: isUnknown ? "Unknown" : label.split('|')[0], 
-                        boxColor: isUnknown ? 'red' : '#3b82f6' 
-                    });
-                    drawBox.draw(canvas);
-
-                    if (!isUnknown) {
-                        showResult(bestMatch.label);
-                    }
+                        boxColor: isUnknown ? '#ef4444' : '#3b82f6' 
+                    }).draw(canvas);
+                    
+                    if (!isUnknown) showResult(match.label);
                 });
             }, 500);
         }
@@ -291,24 +352,14 @@
         function showResult(labelData) {
             const [name, dept, id, url] = labelData.split('|');
             const panel = document.getElementById('result-panel');
-            
             if (!panel.classList.contains('hidden') && document.getElementById('user-name').textContent === name) return;
-
+            
             panel.classList.remove('hidden');
             document.getElementById('user-name').textContent = name;
             document.getElementById('user-dept').textContent = dept;
             document.getElementById('user-id').textContent = `ID: ${id}`;
             document.getElementById('db-photo').src = url;
-            
-            addLog(`Matched: ${name}`, 'success');
-        }
-
-        function showError(title, desc) {
-            document.getElementById('overlay-title').textContent = title;
-            document.getElementById('overlay-desc').textContent = desc;
-            document.getElementById('main-loader').classList.add('hidden');
-            document.getElementById('retry-btn').classList.remove('hidden');
-            document.getElementById('overlay-title').classList.add('text-red-500');
+            addLog(`확인: ${name}`, 'success');
         }
 
         document.getElementById('start-btn').addEventListener('click', startCamera);
@@ -316,9 +367,14 @@
             currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
             startCamera();
         });
-        document.getElementById('retry-btn').addEventListener('click', () => location.reload());
 
-        window.onload = initAI;
+        function logout() {
+            if (accessToken) {
+                google.accounts.oauth2.revoke(accessToken, () => location.reload());
+            } else {
+                location.reload();
+            }
+        }
     </script>
 </body>
 </html>
