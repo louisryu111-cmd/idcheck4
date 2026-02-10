@@ -103,8 +103,8 @@
         <!-- Login Panel (Banyan Style) -->
         <div id="login-panel" class="glass-panel rounded-[3rem] p-10 text-center space-y-8 mt-10">
             <div class="serif text-4xl text-[#c5a059]">Access</div>
-            <p class="text-xs text-slate-400 font-light leading-relaxed px-4">
-                반얀트리 부산의 프라이빗 서비스를 위해<br>보안 인증이 필요합니다.
+            <p class="text-sm text-slate-400 font-light leading-relaxed px-4">
+                반얀트리 부산의 프라이빗 서비스를 위해<br>멤버십 인증이 필요합니다.
             </p>
             <button id="btn-login" class="w-full btn-premium py-5 rounded-full font-bold text-sm tracking-widest uppercase flex items-center justify-center gap-3">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.9 3.16-1.76 4.02-1.12 1.12-2.8 2.32-5.6 2.32-4.8 0-8.6-3.88-8.6-8.68s3.8-8.68 8.6-8.68c2.6 0 4.5 1.04 5.9 2.36l2.3-2.3c-2-1.9-4.6-3.06-8.2-3.06-6.4 0-11.6 5.2-11.6 11.6s5.2 11.6 11.6 11.6c3.48 0 6.12-1.14 8.12-3.22 2.08-2.08 2.74-5.02 2.74-7.38 0-.46-.04-.9-.12-1.32h-10.74z"/></svg>
@@ -128,7 +128,7 @@
             </div>
 
             <button id="btn-start" disabled class="w-full btn-premium py-5 rounded-full font-bold text-sm tracking-widest uppercase disabled:opacity-30 disabled:translate-y-0 shadow-xl">
-                Camera On
+                보안 카메라 시작
             </button>
 
             <!-- Luxury Result Card -->
@@ -167,7 +167,7 @@
     </footer>
 
     <script>
-        // [필수 설정 - 직접 입력하세요]
+        // [설정 값]
         const CLIENT_ID = '88725170403-lkp5homgvhjv50ffoadde8u43sfr8dba.apps.googleusercontent.com'; 
         const SPREADSHEET_ID = '1X1O3wvZ2j_sUeJSifv0Uiex55kAzFEhtZ5vgTlgmIwY'; 
         const SHEET_NAME = 'sheet1'; 
@@ -241,13 +241,22 @@
             const descriptors = await Promise.all(users.map(async user => {
                 try {
                     let imageSource;
+                    // 구글 드라이브 링크 패턴 감지 강화
                     if (user.url.includes("drive.google.com")) {
                         const fileIdMatch = user.url.match(/[-\w]{25,}/);
-                        const driveUrl = `https://www.googleapis.com/drive/v3/files/${fileIdMatch[0]}?alt=media`;
+                        if (!fileIdMatch) throw new Error("Invalid Link");
+                        
+                        const fileId = fileIdMatch[0];
+                        // API를 통한 미디어 스트림 획득
+                        const driveUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+                        
                         const imgRes = await fetch(driveUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
+                        if (!imgRes.ok) throw new Error("Drive Permission Error");
+                        
                         const blob = await imgRes.blob();
                         imageSource = await faceapi.bufferToImage(blob);
                     } else {
+                        // 일반 웹 링크 처리
                         imageSource = await faceapi.fetchImage(`https://wsrv.nl/?url=${encodeURIComponent(user.url)}&output=jpg`);
                     }
 
@@ -256,11 +265,14 @@
                         printLog(`Analysed: ${user.name}`, 'success');
                         return new faceapi.LabeledFaceDescriptors(`${user.name}|${user.dept}|${user.id}|${user.url}`, [detection.descriptor]);
                     }
-                } catch (e) { printLog(`Skip: ${user.name}`, 'info'); }
+                } catch (e) { printLog(`Skip: ${user.name} (${e.message})`, 'info'); }
                 return null;
             }));
 
-            faceMatcher = new faceapi.FaceMatcher(descriptors.filter(d => d !== null), 0.5);
+            const validDescriptors = descriptors.filter(d => d !== null);
+            if (validDescriptors.length === 0) throw new Error("No Face Vectors Found");
+
+            faceMatcher = new faceapi.FaceMatcher(validDescriptors, 0.5);
             document.getElementById('loading-overlay').style.display = 'none';
             document.getElementById('btn-start').disabled = false;
             printLog("System Armed & Ready", 'success');
@@ -288,9 +300,10 @@
                         const match = faceMatcher.findBestMatch(d.descriptor);
                         const isUnknown = match.label.includes('unknown');
                         
-                        // Custom Box Style
+                        // Luxury Box Drawing
                         ctx.strokeStyle = isUnknown ? '#ef4444' : '#c5a059';
-                        ctx.lineWidth = 2;
+                        ctx.lineWidth = 3;
+                        ctx.setLineDash([]);
                         ctx.strokeRect(d.detection.box.x, d.detection.box.y, d.detection.box.width, d.detection.box.height);
                         
                         if (!isUnknown) {
@@ -299,8 +312,10 @@
                             document.getElementById('user-name').textContent = name;
                             document.getElementById('user-dept').textContent = dept;
                             document.getElementById('user-id').textContent = `Member No. ${id}`;
-                            const fId = url.match(/[-\w]{25,}/);
-                            document.getElementById('user-img').src = fId ? `https://lh3.googleusercontent.com/u/0/d/${fId[0]}` : url;
+                            
+                            const fIdMatch = url.match(/[-\w]{25,}/);
+                            // 썸네일 표시용 링크 (구글 서버 렌더링)
+                            document.getElementById('user-img').src = fIdMatch ? `https://lh3.googleusercontent.com/u/0/d/${fIdMatch[0]}` : url;
                         }
                     });
                 }, 600);
