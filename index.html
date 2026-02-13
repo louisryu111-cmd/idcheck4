@@ -25,12 +25,10 @@
 
         .serif { font-family: 'Bodoni Moda', serif; }
 
-        /* Luxury Gradient Background */
         .bg-luxury {
             background: radial-gradient(circle at top right, #1a1e26 0%, #0a0c10 100%);
         }
 
-        /* Glassmorphism Effect */
         .glass-panel {
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(12px);
@@ -55,7 +53,6 @@
             object-fit: cover;
         }
 
-        /* Gold Pulse Animation */
         .gold-glow {
             box-shadow: 0 0 20px rgba(197, 160, 89, 0.3);
             animation: pulse-gold 3s infinite;
@@ -83,6 +80,20 @@
 
         .log-box::-webkit-scrollbar { width: 3px; }
         .log-box::-webkit-scrollbar-thumb { background: var(--banyan-gold); border-radius: 10px; }
+        
+        .camera-switch-btn {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 20;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(197, 160, 89, 0.4);
+            padding: 0.75rem;
+            border-radius: 100%;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        .camera-switch-btn:active { transform: rotate(180deg); }
     </style>
 </head>
 <body class="bg-luxury min-h-screen flex flex-col">
@@ -100,10 +111,11 @@
 
     <main class="flex-1 px-6 max-w-lg mx-auto w-full pb-12 space-y-8">
         
-        <!-- Login Panel (Banyan Style) -->
+        <!-- Login Panel -->
         <div id="login-panel" class="glass-panel rounded-[3rem] p-10 text-center space-y-8 mt-10">
             <div class="serif text-4xl text-[#c5a059]">Access</div>
-            <p class="text-xm text-slate-400 font-light leading-relaxed px-4">
+            <!-- 문구 크기 축소 반영 (text-xs) -->
+            <p class="text-[11px] text-slate-400 font-light leading-relaxed px-4 tracking-tight">
                 반얀트리 부산의 프라이빗 서비스를 위해<br>보안 인증이 필요합니다.
             </p>
             <button id="btn-login" class="w-full btn-premium py-5 rounded-full font-bold text-sm tracking-widest uppercase flex items-center justify-center gap-3">
@@ -117,6 +129,13 @@
             
             <!-- Video Container -->
             <div class="video-container gold-glow">
+                <!-- 카메라 전환 버튼 -->
+                <button id="btn-switch-camera" class="camera-switch-btn text-[#c5a059]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+
                 <video id="webcam" autoplay playsinline muted></video>
                 <canvas id="overlay"></canvas>
                 
@@ -167,7 +186,6 @@
     </footer>
 
     <script>
-        // [설정 값]
         const CLIENT_ID = '88725170403-lkp5homgvhjv50ffoadde8u43sfr8dba.apps.googleusercontent.com'; 
         const SPREADSHEET_ID = '1X1O3wvZ2j_sUeJSifv0Uiex55kAzFEhtZ5vgTlgmIwY'; 
         const SHEET_NAME = 'sheet1'; 
@@ -176,6 +194,8 @@
         let tokenClient;
         let faceMatcher = null;
         let logCount = 0;
+        let currentFacingMode = 'user'; // 초기값 전면 카메라
+        let currentStream = null;
 
         const consoleEl = document.getElementById('console');
         function printLog(msg, type = 'info') {
@@ -221,8 +241,6 @@
                 const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodedRange}`;
                 
                 const sheetRes = await fetch(sheetUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
-                if (!sheetRes.ok) throw new Error("Cloud Storage Access Denied");
-                
                 const data = await sheetRes.json();
                 const users = data.values.slice(1).map(row => ({
                     id: row[0], name: row[1], dept: row[2], url: row[3]
@@ -230,10 +248,8 @@
 
                 printLog(`${users.length} Records Retrieved`);
                 await buildFaceMatcher(users);
-
             } catch (err) {
                 printLog(err.message, 'error');
-                document.getElementById('sync-status').textContent = "Sync Error Encountered";
             }
         }
 
@@ -241,86 +257,88 @@
             const descriptors = await Promise.all(users.map(async user => {
                 try {
                     let imageSource;
-                    // 구글 드라이브 링크 패턴 감지 강화
                     if (user.url.includes("drive.google.com")) {
                         const fileIdMatch = user.url.match(/[-\w]{25,}/);
-                        if (!fileIdMatch) throw new Error("Invalid Link");
-                        
-                        const fileId = fileIdMatch[0];
-                        // API를 통한 미디어 스트림 획득
-                        const driveUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
-                        
+                        const driveUrl = `https://www.googleapis.com/drive/v3/files/${fileIdMatch[0]}?alt=media`;
                         const imgRes = await fetch(driveUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
-                        if (!imgRes.ok) throw new Error("Drive Permission Error");
-                        
                         const blob = await imgRes.blob();
                         imageSource = await faceapi.bufferToImage(blob);
                     } else {
-                        // 일반 웹 링크 처리
                         imageSource = await faceapi.fetchImage(`https://wsrv.nl/?url=${encodeURIComponent(user.url)}&output=jpg`);
                     }
-
                     const detection = await faceapi.detectSingleFace(imageSource, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
                     if (detection) {
                         printLog(`Analysed: ${user.name}`, 'success');
                         return new faceapi.LabeledFaceDescriptors(`${user.name}|${user.dept}|${user.id}|${user.url}`, [detection.descriptor]);
                     }
-                } catch (e) { printLog(`Skip: ${user.name} (${e.message})`, 'info'); }
+                } catch (e) { printLog(`Skip: ${user.name}`, 'info'); }
                 return null;
             }));
 
-            const validDescriptors = descriptors.filter(d => d !== null);
-            if (validDescriptors.length === 0) throw new Error("No Face Vectors Found");
-
-            faceMatcher = new faceapi.FaceMatcher(validDescriptors, 0.5);
+            faceMatcher = new faceapi.FaceMatcher(descriptors.filter(d => d !== null), 0.5);
             document.getElementById('loading-overlay').style.display = 'none';
             document.getElementById('btn-start').disabled = false;
             printLog("System Armed & Ready", 'success');
         }
 
         async function startRecognition() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+
             const video = document.getElementById('webcam');
             const canvas = document.getElementById('overlay');
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            video.srcObject = stream;
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: currentFacingMode } 
+                });
+                currentStream = stream;
+                video.srcObject = stream;
 
-            video.onloadedmetadata = () => {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                const displaySize = { width: video.videoWidth, height: video.videoHeight };
-                faceapi.matchDimensions(canvas, displaySize);
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    const displaySize = { width: video.videoWidth, height: video.videoHeight };
+                    faceapi.matchDimensions(canvas, displaySize);
 
-                setInterval(async () => {
-                    const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
-                    const resized = faceapi.resizeResults(detections, displaySize);
-                    const ctx = canvas.getContext('2d');
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    const interval = setInterval(async () => {
+                        if (video.paused || video.ended) return;
+                        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
+                        const resized = faceapi.resizeResults(detections, displaySize);
+                        const ctx = canvas.getContext('2d');
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                    resized.forEach(d => {
-                        const match = faceMatcher.findBestMatch(d.descriptor);
-                        const isUnknown = match.label.includes('unknown');
-                        
-                        // Luxury Box Drawing
-                        ctx.strokeStyle = isUnknown ? '#ef4444' : '#c5a059';
-                        ctx.lineWidth = 3;
-                        ctx.setLineDash([]);
-                        ctx.strokeRect(d.detection.box.x, d.detection.box.y, d.detection.box.width, d.detection.box.height);
-                        
-                        if (!isUnknown) {
-                            const [name, dept, id, url] = match.label.split('|');
-                            document.getElementById('result-box').classList.remove('hidden');
-                            document.getElementById('user-name').textContent = name;
-                            document.getElementById('user-dept').textContent = dept;
-                            document.getElementById('user-id').textContent = `Member No. ${id}`;
+                        resized.forEach(d => {
+                            const match = faceMatcher.findBestMatch(d.descriptor);
+                            const isUnknown = match.label.includes('unknown');
+                            ctx.strokeStyle = isUnknown ? '#ef4444' : '#c5a059';
+                            ctx.lineWidth = 3;
+                            ctx.strokeRect(d.detection.box.x, d.detection.box.y, d.detection.box.width, d.detection.box.height);
                             
-                            const fIdMatch = url.match(/[-\w]{25,}/);
-                            // 썸네일 표시용 링크 (구글 서버 렌더링)
-                            document.getElementById('user-img').src = fIdMatch ? `https://lh3.googleusercontent.com/u/0/d/${fIdMatch[0]}` : url;
-                        }
-                    });
-                }, 600);
-            };
+                            if (!isUnknown) {
+                                const [name, dept, id, url] = match.label.split('|');
+                                document.getElementById('result-box').classList.remove('hidden');
+                                document.getElementById('user-name').textContent = name;
+                                document.getElementById('user-dept').textContent = dept;
+                                document.getElementById('user-id').textContent = `Member No. ${id}`;
+                                const fIdMatch = url.match(/[-\w]{25,}/);
+                                document.getElementById('user-img').src = fIdMatch ? `https://lh3.googleusercontent.com/u/0/d/${fIdMatch[0]}` : url;
+                            }
+                        });
+                    }, 600);
+                };
+            } catch (err) {
+                printLog("Camera Access Denied", 'error');
+            }
         }
+
+        // 카메라 전환 이벤트
+        document.getElementById('btn-switch-camera').onclick = () => {
+            currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
+            printLog(`Switching to ${currentFacingMode} camera`, 'info');
+            startRecognition();
+        };
 
         document.getElementById('btn-start').onclick = startRecognition;
     </script>
