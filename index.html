@@ -17,21 +17,19 @@
         #webcam, #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
         .btn-premium { background: linear-gradient(135deg, #c5a059 0%, #a38141 100%); color: #000; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
         .btn-premium:disabled { opacity: 0.2; transform: scale(0.98); }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
         .log-box::-webkit-scrollbar { width: 2px; }
         .log-box::-webkit-scrollbar-thumb { background: var(--banyan-gold); }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <!-- Header -->
     <header class="p-8 flex justify-between items-center">
         <div class="space-y-1">
             <p class="serif text-[10px] tracking-[0.4em] text-[#c5a059] uppercase">Banyan Tree</p>
             <h1 class="text-xl font-light tracking-widest uppercase">Busan</h1>
         </div>
         <div id="connection-status" class="flex items-center text-[10px] text-slate-500 uppercase tracking-tighter">
-            <span class="status-dot bg-red-500 animate-pulse"></span> Offline
+            <span class="status-dot w-2 h-2 rounded-full bg-red-500 animate-pulse mr-2"></span> Offline
         </div>
     </header>
 
@@ -56,12 +54,10 @@
             
             <!-- Left Column: Camera -->
             <div class="space-y-4">
-                <!-- 카메라 비율을 4:3으로 조정하고 크기를 줄임 -->
                 <div class="video-container aspect-video lg:aspect-[4/3]">
                     <video id="webcam" autoplay playsinline muted></video>
                     <canvas id="overlay"></canvas>
                     
-                    <!-- Loading State -->
                     <div id="loading-overlay" class="absolute inset-0 bg-[#0a0c10] flex flex-col items-center justify-center text-center">
                         <div class="w-16 h-16 border-t-2 border-[#c5a059] rounded-full animate-spin mb-6"></div>
                         <p class="serif text-sm text-[#c5a059] tracking-[0.3em] uppercase">Syncing Security</p>
@@ -69,7 +65,6 @@
                     </div>
                 </div>
 
-                <!-- Controls -->
                 <div class="grid grid-cols-4 gap-3">
                     <button id="btn-start" disabled class="col-span-3 btn-premium py-4 rounded-full font-bold text-[11px] tracking-[0.2em] uppercase">시스템 가동</button>
                     <button id="btn-next-camera" title="카메라 전환" class="col-span-1 bg-white/5 border border-[#c5a059]/30 rounded-full flex items-center justify-center text-[#c5a059] active:scale-90 transition-transform">
@@ -82,9 +77,7 @@
 
             <!-- Right Column: Results & Logs -->
             <div class="space-y-6">
-                <!-- Member Info Card -->
                 <div id="result-box" class="hidden relative glass-panel rounded-[2.5rem] p-8 animate-in slide-in-from-bottom-4 duration-500">
-                    <!-- 일치율(Percentage) 뱃지 -->
                     <div class="absolute top-5 right-5 bg-black/50 border border-[#c5a059]/50 text-[#c5a059] px-3 py-1 rounded-full text-[10px] font-bold tracking-widest flex items-center gap-1.5">
                         <div class="w-1.5 h-1.5 bg-[#c5a059] rounded-full animate-ping"></div>
                         <span id="match-percent">0</span>% MATCH
@@ -103,23 +96,18 @@
                     </div>
                 </div>
 
-                <!-- Log Console -->
                 <div class="bg-black/40 rounded-[2rem] p-6 border border-white/5">
                     <div class="flex justify-between items-center mb-4">
                         <span class="serif text-[9px] text-[#c5a059] tracking-[0.2em] uppercase opacity-70">Security Logs</span>
                         <span id="cam-info" class="text-[8px] font-mono text-slate-600 uppercase tracking-tighter">No Camera Detected</span>
                     </div>
-                    <div id="console" class="log-box h-32 overflow-y-auto text-[9px] font-mono text-slate-500 space-y-1.5">
+                    <div id="console" class="log-box h-48 overflow-y-auto text-[9px] font-mono text-slate-500 space-y-1.5">
                         <div>> System Standby. Waiting for Auth...</div>
                     </div>
                 </div>
             </div>
         </div>
     </main>
-
-    <footer class="p-8 text-center border-t border-white/5">
-        <p class="serif text-[9px] text-slate-600 tracking-[0.5em] uppercase">Private Residence & Spa</p>
-    </footer>
 
     <script>
         const CLIENT_ID = '88725170403-lkp5homgvhjv50ffoadde8u43sfr8dba.apps.googleusercontent.com';
@@ -137,38 +125,28 @@
         function printLog(msg, type = 'info') {
             const div = document.createElement('div');
             div.textContent = `> ${msg.toUpperCase()}`;
-            if (type === 'error') div.className = 'text-red-900';
+            if (type === 'error') div.className = 'text-red-500 font-bold';
             if (type === 'success') div.className = 'text-[#c5a059] font-bold';
             consoleEl.appendChild(div);
             consoleEl.scrollTop = consoleEl.scrollHeight;
         }
 
-        // --- 새롭게 추가된 카메라 자동 스캔 및 감지 시스템 ---
+        // 카메라 장치 목록을 갱신하는 함수
         async function updateDeviceList() {
             try {
-                // 빈 스트림을 먼저 열어 브라우저가 USB 웹캠의 권한과 이름을 정확히 읽어오도록 유도합니다.
-                const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                // 권한을 먼저 요청하여 장치 레이블을 가져옵니다.
+                await navigator.mediaDevices.getUserMedia({ video: true });
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 videoDevices = devices.filter(d => d.kind === 'videoinput');
                 
-                printLog(`SYSTEM: ${videoDevices.length}개의 카메라 장치 인식됨`, "success");
+                printLog(`${videoDevices.length}개의 카메라 감지됨`, "success");
                 videoDevices.forEach((d, i) => {
-                    // 로그창에 현재 인식된 카메라 이름들을 전부 출력합니다.
-                    printLog(`[CH ${i}] ${d.label || '알 수 없는 USB 장치'}`);
+                    printLog(`[CH ${i}] ${d.label || 'Unknown Camera'}`);
                 });
-                
-                tempStream.getTracks().forEach(track => track.stop());
             } catch (err) {
-                printLog("카메라 접근 권한이 필요합니다.", "error");
+                printLog("카메라 권한 거부됨: " + err.message, "error");
             }
         }
-
-        // OTG 젠더로 웹캠을 꽂거나 뺄 때 즉시 감지하여 목록을 갱신합니다.
-        navigator.mediaDevices.addEventListener('devicechange', async () => {
-            printLog("하드웨어 연결 상태 변경 감지됨. 재스캔 중...");
-            await updateDeviceList();
-        });
-        // --------------------------------------------------------
 
         window.onload = () => {
             tokenClient = google.accounts.oauth2.initTokenClient({
@@ -179,7 +157,7 @@
                     accessToken = res.access_token;
                     document.getElementById('login-panel').style.display = 'none';
                     document.getElementById('app-panel').classList.remove('hidden');
-                    document.getElementById('connection-status').innerHTML = '<span class="status-dot bg-green-500"></span> Online';
+                    document.getElementById('connection-status').innerHTML = '<span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span> Online';
                     printLog("Authentication Successful", "success");
                     await initSecuritySystem();
                 }
@@ -191,7 +169,7 @@
         async function initSecuritySystem() {
             try {
                 const syncMsg = document.getElementById('sync-detail');
-                syncMsg.textContent = "Loading Bio-Metric AI Engine...";
+                syncMsg.textContent = "Loading Face-AI Models...";
                 
                 const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
                 await Promise.all([
@@ -201,20 +179,17 @@
                 ]);
                 printLog("AI Models Ready");
 
-                syncMsg.textContent = `Reading Member Data [${SHEET_NAME}]...`;
+                syncMsg.textContent = "Fetching Member Data...";
                 const range = encodeURIComponent(`${SHEET_NAME}!A1:E500`);
                 const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}`, {
                     headers: { Authorization: `Bearer ${accessToken}` }
                 });
-                
-                if (!res.ok) throw new Error(`HTTP ${res.status}: Check Sheet Name and Permissions`);
                 const data = await res.json();
-                
-                const users = data.values.slice(1).map(row => ({
+                const users = (data.values || []).slice(1).map(row => ({
                     id: row[0], name: row[1], dept: row[2], url: row[3]
                 })).filter(u => u.url && u.name);
 
-                printLog(`${users.length} Members Found. Analyzing Bio-data...`);
+                printLog(`${users.length}명의 데이터 분석 중...`);
 
                 const descriptors = await Promise.all(users.map(async user => {
                     try {
@@ -233,46 +208,47 @@
 
                 faceMatcher = new faceapi.FaceMatcher(descriptors.filter(d => d !== null), 0.55);
                 
-                // 기존의 단순 기기 탐색 코드를 지우고, 강력한 스캔 함수로 대체합니다.
                 await updateDeviceList();
-
                 document.getElementById('loading-overlay').style.display = 'none';
                 document.getElementById('btn-start').disabled = false;
                 printLog("Security System Armed", "success");
             } catch (err) {
-                printLog(err.message, "error");
-                document.getElementById('sync-detail').textContent = "ERROR: " + err.message;
+                printLog("초기화 실패: " + err.message, "error");
             }
         }
 
         async function startScanning(index) {
-            if (currentStream) currentStream.getTracks().forEach(t => t.stop());
-            
-            const device = videoDevices[index];
-            document.getElementById('cam-info').textContent = device ? (device.label || `Camera ${index}`) : 'Auto';
-            
             try {
-                // 안드로이드 호환성 향상을 위해 exact 제약 조건 완화
-                const videoConstraints = device && device.deviceId ? { deviceId: device.deviceId } : { facingMode: 'environment' };
+                if (currentStream) {
+                    currentStream.getTracks().forEach(t => t.stop());
+                    printLog("이전 스트림 중지됨");
+                }
                 
-                currentStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: videoConstraints 
-                });
+                const device = videoDevices[index];
+                document.getElementById('cam-info').textContent = device ? (device.label || `CH ${index}`) : 'Searching...';
+                
+                // 노트북 웹캠 및 모바일 외부 카메라 호환성을 위한 제약 조건 설정
+                const constraints = {
+                    video: device && device.deviceId ? { deviceId: { exact: device.deviceId } } : { facingMode: 'user' }
+                };
+
+                printLog(`${device ? device.label : '기본'} 카메라 연결 시도...`);
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
                 
                 const video = document.getElementById('webcam');
                 video.srcObject = currentStream;
                 
-                // 안드로이드에서 자동 재생을 강제하기 위한 플레이 호출
-                video.play().catch(e => printLog("Auto-play prevented", "error"));
+                // 모바일 크롬 브라우저 정책 대응
+                await video.play();
                 
                 video.onloadedmetadata = () => {
                     const canvas = document.getElementById('overlay');
                     const displaySize = { width: video.videoWidth, height: video.videoHeight };
                     faceapi.matchDimensions(canvas, displaySize);
                     
-                    printLog(`Active: ${device ? device.label : 'Default'}`, "success");
+                    printLog("비디오 스트림 활성화", "success");
 
-                    setInterval(async () => {
+                    const detectionLoop = setInterval(async () => {
                         if (video.paused || video.ended) return;
                         const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
                         const resized = faceapi.resizeResults(detections, displaySize);
@@ -282,51 +258,59 @@
                         resized.forEach(d => {
                             const match = faceMatcher.findBestMatch(d.descriptor);
                             const isUnknown = match.label.includes('unknown');
+                            const confidence = Math.max(0, Math.round((1 - match.distance) * 100));
                             
                             if (!isUnknown) {
                                 const [name, dept, url] = match.label.split('|');
                                 document.getElementById('result-box').classList.remove('hidden');
                                 document.getElementById('user-name').textContent = name;
                                 document.getElementById('user-dept').textContent = dept;
-                                
-                                // 일치율(퍼센테이지) 계산 로직 추가
-                                const confidence = Math.max(0, Math.round((1 - match.distance) * 100));
                                 document.getElementById('match-percent').textContent = confidence;
                                 
                                 const fId = url.match(/[-\w]{25,}/);
                                 document.getElementById('user-img').src = fId ? `https://lh3.googleusercontent.com/u/0/d/${fId[0]}` : url;
                             }
 
-                            // 텍스트와 박스를 함께 렌더링
                             const boxColor = isUnknown ? '#ff4444' : '#c5a059';
                             ctx.strokeStyle = boxColor;
                             ctx.lineWidth = 4;
                             ctx.strokeRect(d.detection.box.x, d.detection.box.y, d.detection.box.width, d.detection.box.height);
                             
-                            // 화면 내 얼굴 위젯에 퍼센트 텍스트 그리기
                             if (!isUnknown) {
-                                const confidence = Math.max(0, Math.round((1 - match.distance) * 100));
                                 ctx.fillStyle = boxColor;
-                                ctx.font = 'bold 18px "Noto Sans KR", sans-serif';
-                                ctx.fillText(`${confidence}% 일치`, d.detection.box.x, d.detection.box.y - 10);
+                                ctx.font = 'bold 16px "Noto Sans KR"';
+                                ctx.fillText(`${confidence}% MATCH`, d.detection.box.x, d.detection.box.y - 10);
                             }
                         });
                     }, 500);
                 };
-            } catch (e) { printLog("Camera Fail: " + e.message, "error"); }
+            } catch (e) {
+                printLog("연결 실패: " + e.message, "error");
+                // exact 조건 실패 시 fallback 시도
+                if (e.name === 'OverconstrainedError') {
+                    printLog("재시도: 일반 모드로 연결 중...");
+                    currentStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    document.getElementById('webcam').srcObject = currentStream;
+                }
+            }
         }
 
         document.getElementById('btn-start').onclick = () => startScanning(currentDeviceIndex);
         
-        document.getElementById('btn-next-camera').onclick = () => {
-            if (videoDevices.length === 0) {
-                printLog("카메라를 찾을 수 없습니다.", "error");
-                return;
+        document.getElementById('btn-next-camera').onclick = async () => {
+            if (videoDevices.length === 0) await updateDeviceList();
+            if (videoDevices.length > 0) {
+                currentDeviceIndex = (currentDeviceIndex + 1) % videoDevices.length;
+                startScanning(currentDeviceIndex);
+            } else {
+                printLog("사용 가능한 카메라가 없습니다.", "error");
             }
-            // 다음 카메라 인덱스로 넘어가며 스캔 시작
-            currentDeviceIndex = (currentDeviceIndex + 1) % videoDevices.length;
-            printLog(`카메라 채널 변경: CH ${currentDeviceIndex} 연결 시도...`);
-            startScanning(currentDeviceIndex);
+        };
+
+        // 하드웨어 변경 감지
+        navigator.mediaDevices.ondevicechange = () => {
+            printLog("하드웨어 변경 감지됨 - 장치 목록 갱신");
+            updateDeviceList();
         };
     </script>
 </body>
