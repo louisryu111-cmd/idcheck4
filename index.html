@@ -8,52 +8,23 @@
     <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
         :root { --primary-color: #8E7958; --bg-color: #121212; --card-bg: #1E1E1E; --text-color: #FFFFFF; }
-        body { margin: 0; padding: 0; background-color: #000; font-family: 'Noto Sans KR', sans-serif; color: var(--text-color); -webkit-tap-highlight-color: transparent; overflow: hidden; }
+        body { margin: 0; padding: 0; background-color: #000; font-family: 'Noto Sans KR', sans-serif; color: var(--text-color); overflow: hidden; }
         #app-container { max-width: 480px; margin: 0 auto; background-color: var(--bg-color); height: 100vh; position: relative; display: flex; flex-direction: column; }
-
-        /* 인증 레이어 (최상단) */
         #auth-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; background: #000; }
         .auth-screen { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; position: absolute; top: 0; left: 0; }
-        .logo-intro { font-size: 22px; font-weight: 300; letter-spacing: 2px; margin-bottom: 50px; color: var(--primary-color); text-align: center; line-height: 1.5; }
-        .auth-btn { width: 80%; background-color: var(--card-bg); color: #fff; border: 1px solid var(--primary-color); padding: 18px; border-radius: 12px; font-size: 16px; margin-bottom: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; z-index: 2100; }
-
-        /* 안면 인식 UI */
-        .camera-container { position: relative; width: 260px; height: 260px; border-radius: 50%; overflow: hidden; border: 2px solid var(--primary-color); margin-bottom: 20px; background: #1a1a1a; }
+        .logo-intro { font-size: 22px; font-weight: 300; letter-spacing: 2px; margin-bottom: 50px; color: var(--primary-color); text-align: center; }
+        .auth-btn { width: 80%; background-color: var(--card-bg); color: #fff; border: 1px solid var(--primary-color); padding: 18px; border-radius: 12px; font-size: 16px; margin-bottom: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .camera-container { position: relative; width: 260px; height: 260px; border-radius: 50%; overflow: hidden; border: 2px solid var(--primary-color); margin-bottom: 20px; }
         #video-feed { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
         .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--primary-color); box-shadow: 0 0 15px var(--primary-color); animation: scan 2s infinite linear; }
         @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
-
-        #match-popup { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-        .member-photo { width: 150px; height: 150px; border-radius: 50%; border: 3px solid var(--primary-color); margin-bottom: 20px; object-fit: cover; background: #333; }
-
-        /* 코드 입력 UI (클릭 문제 해결을 위한 높은 z-index) */
-        .input-group { width: 80%; position: relative; display: flex; align-items: center; margin-bottom: 25px; z-index: 2500; }
-        .code-input { width: 100%; background: #1a1a1a; border: 1px solid #444; color: #fff; padding: 18px; font-size: 18px; border-radius: 12px; text-align: center; outline: none; }
-        .voice-btn { position: absolute; right: 15px; color: var(--primary-color); cursor: pointer; background: none; border: none; font-size: 24px; }
-
-        /* 메인 홈 화면 */
-        #main-app { display: none; flex: 1; flex-direction: column; padding: 25px 20px; overflow-y: auto; }
-        .hotel-name { font-size: 18px; font-weight: bold; color: var(--primary-color); margin-bottom: 10px; }
-        .welcome-text { font-size: 20px; margin-bottom: 30px; line-height: 1.4; font-weight: 300; }
-        .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
-        .menu-item { background-color: var(--card-bg); border-radius: 15px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #333; transition: 0.3s; }
+        #match-popup { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; flex-direction: column; align-items: center; justify-content: center; }
+        .member-photo { width: 150px; height: 150px; border-radius: 50%; border: 3px solid var(--primary-color); margin-bottom: 20px; object-fit: cover; }
+        #main-app { display: none; flex: 1; flex-direction: column; padding: 25px 20px; }
+        .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        .menu-item { background-color: var(--card-bg); border-radius: 15px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #333; }
         .menu-item i { font-size: 35px; color: var(--primary-color); margin-bottom: 10px; }
-        .menu-item span { font-size: 14px; text-align: center; color: #eee; font-weight: 500; }
-
-        /* 서브 화면 레이어 */
         .sub-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--bg-color); z-index: 500; padding: 25px 20px; box-sizing: border-box; flex-direction: column; }
-        .screen-header { display: flex; align-items: center; margin-bottom: 25px; font-size: 18px; font-weight: bold; color: var(--primary-color); }
-        .screen-header i { margin-right: 15px; cursor: pointer; }
-
-        /* 하단 바 */
-        #footer-area { background-color: #0a0a0a; border-top: 1px solid #222; padding: 15px 0 25px 0; display: flex; flex-direction: column; align-items: center; }
-        .map-trigger { color: var(--primary-color); display: flex; flex-direction: column; align-items: center; cursor: pointer; margin-bottom: 15px; }
-        .copyright-text { font-size: 10px; color: #555; text-align: center; line-height: 1.5; padding: 0 20px; }
-
-        /* 바텀 시트 (4 Season Tour) */
-        #bottom-sheet-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1200; }
-        #bottom-sheet { position: absolute; bottom: -100%; left: 0; width: 100%; background-color: #1a1a1a; border-radius: 25px 25px 0 0; z-index: 1201; transition: bottom 0.3s ease; padding: 25px; box-sizing: border-box; }
-        .sub-list-item { padding: 20px 0; border-bottom: 1px solid #2a2a2a; display: flex; justify-content: space-between; color: #ddd; font-size: 16px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -70,231 +41,138 @@
             <div class="logo-intro">FACE ID VERIFICATION</div>
             <div class="camera-container">
                 <video id="video-feed" playsinline muted></video>
-                <div class="scan-line" id="scan-bar"></div>
+                <div class="scan-line"></div>
             </div>
-            <div id="face-status" style="color:var(--primary-color); text-align:center; font-size:13px; height:40px; padding:0 20px;">
-                멤버십 데이터를 불러오고 있습니다...
-            </div>
-            <button class="auth-btn" style="background:none; border:none; color:#666;" onclick="location.reload()">취소 후 돌아가기</button>
+            <div id="face-status" style="color:var(--primary-color); text-align:center; font-size:13px; padding:0 20px;">연결 중...</div>
+            <button class="auth-btn" style="background:none; border:none; color:#666;" onclick="location.reload()">취소</button>
         </div>
 
         <div id="auth-code" class="auth-screen" style="display:none;">
-            <div class="logo-intro">MEMBER ACCESS</div>
-            <div class="input-group">
-                <input type="text" id="access-code" class="code-input" placeholder="코드를 입력하세요">
-                <button class="voice-btn" onclick="startSTT('access-code')"><i class="material-icons">mic</i></button>
-            </div>
-            <button class="auth-btn" style="background:var(--primary-color)" onclick="checkCode()">접속하기</button>
-            <button class="auth-btn" style="background:none; border:none; color:#666;" onclick="location.reload()">뒤로 가기</button>
+            <input type="text" id="access-code" style="width:80%; padding:15px; margin-bottom:20px;" placeholder="코드 입력">
+            <button class="auth-btn" onclick="checkCode()">접속</button>
         </div>
 
         <div id="match-popup">
             <img id="match-member-photo" src="" class="member-photo">
-            <div id="match-rate" style="font-size:24px; font-weight:bold; color:white; margin-bottom:5px;"></div>
-            <div id="match-label" style="font-size:18px; color:var(--primary-color); margin-bottom:30px;"></div>
+            <div id="match-rate" style="font-size:24px; color:white;"></div>
+            <div id="match-label" style="color:var(--primary-color); margin:20px 0;"></div>
             <button id="match-btn" class="auth-btn" style="width:150px;"></button>
         </div>
     </div>
 
     <div id="main-app">
-        <div class="hotel-name">Banyantree Busan Haeundae</div>
-        <div class="welcome-text">반갑습니다, 회원님.<br><b>컨시어지 서비스를 시작합니다.</b></div>
-        
+        <div style="color:var(--primary-color); font-weight:bold; margin-bottom:10px;">Banyantree Busan</div>
+        <div style="font-size:20px; margin-bottom:30px;">반갑습니다, 회원님.</div>
         <div class="menu-grid">
-            <div class="menu-item" onclick="openSub('concierge')"><i class="material-icons">room_service</i><span>Concierge<br>Service</span></div>
-            <div class="menu-item" onclick="openSub('hotel')"><i class="material-icons">apartment</i><span>Hotel<br>Service</span></div>
-            <div class="menu-item" onclick="window.open('https://www.banyantree.com/booking', '_blank')"><i class="material-icons">event_available</i><span>Member<br>Booking</span></div>
-            <div class="menu-item" onclick="runValetCheck()"><i class="material-icons">directions_car</i><span>Valet<br>Parking</span></div>
-        </div>
-
-        <div id="footer-area">
-            <div class="map-trigger" onclick="window.open('https://drive.google.com/file/d/1ICKC21t37n6B5ek9WQc_NNsLAfjAFfMo/view?usp=drive_link')">
-                <i class="material-icons">map</i><span>Hotel Map</span>
-            </div>
-            <div class="copyright-text">© Banyan Tree Hotels & Resorts. All rights reserved.</div>
+            <div class="menu-item" onclick="openSub('concierge')"><i class="material-icons">room_service</i><span>Concierge</span></div>
+            <div class="menu-item" onclick="openSub('hotel')"><i class="material-icons">apartment</i><span>Hotel Service</span></div>
+            <div class="menu-item" onclick="window.open('https://www.banyantree.com', '_blank')"><i class="material-icons">event_available</i><span>Booking</span></div>
+            <div class="menu-item" onclick="alert('발렛 준비 중')"><i class="material-icons">directions_car</i><span>Valet</span></div>
         </div>
     </div>
 
     <div id="sub-concierge" class="sub-screen">
-        <div class="screen-header"><i class="material-icons" onclick="closeSub()">arrow_back</i>Concierge Service</div>
-        <div class="menu-grid">
-            <div class="menu-item" onclick="openTour()"><i class="material-icons">map</i><span>4 Season Tour</span></div>
-            <div class="menu-item" onclick="alert('Kids 프로그램 안내 준비 중입니다.')"><i class="material-icons">child_friendly</i><span>Kids</span></div>
-            <div class="menu-item" onclick="alert('프리미엄 세차 예약 서비스입니다.')"><i class="material-icons">local_car_wash</i><span>Car Wash</span></div>
-            <div class="menu-item" onclick="alert('인근 병원 및 응급실 정보를 안내합니다.')"><i class="material-icons">medical_services</i><span>Hospital</span></div>
+        <div onclick="closeSub()"><i class="material-icons">arrow_back</i> 뒤로</div>
+        <div class="menu-grid" style="margin-top:20px;">
+            <div class="menu-item"><span>4 Season Tour</span></div>
+            <div class="menu-item"><span>Kids</span></div>
         </div>
-    </div>
-
-    <div id="sub-hotel" class="sub-screen">
-        <div class="screen-header"><i class="material-icons" onclick="closeSub()">arrow_back</i>Hotel Service</div>
-        <div class="menu-grid">
-            <div class="menu-item" onclick="alert('Dining 예약')"><i class="material-icons">restaurant</i><span>Dining</span></div>
-            <div class="menu-item" onclick="alert('Lounge 정보')"><i class="material-icons">local_bar</i><span>Lounge</span></div>
-            <div class="menu-item" onclick="alert('Wellness & SPA')"><i class="material-icons">spa</i><span>Wellness</span></div>
-            <div class="menu-item" onclick="alert('Facilities')"><i class="material-icons">pool</i><span>Facilities</span></div>
-            <div class="menu-item" onclick="alert('Kids Club')"><i class="material-icons">child_care</i><span>Kids</span></div>
-            <div class="menu-item" onclick="alert('연회장 및 웨딩')"><i class="material-icons">celebration</i><span>연회/웨딩</span></div>
-        </div>
-    </div>
-
-    <div id="bottom-sheet-overlay" onclick="closeTour()"></div>
-    <div id="bottom-sheet">
-        <div style="color:var(--primary-color); font-weight:bold; margin-bottom:15px; font-size:18px;">4 Season Tour Drive</div>
-        <div class="sub-list-item" onclick="window.open('https://drive.google.com/file/d/1Ax4O2b49CM5I6-KnMebXjz9r8PHlgUmz/view')"><span>🌸 Spring Course</span><i class="material-icons">chevron_right</i></div>
-        <div class="sub-list-item" onclick="window.open('https://drive.google.com/file/d/1m1nqU2eRtS4YHKAPKqYEekQn7KF0i_sp/view')"><span>🌊 Summer Course</span><i class="material-icons">chevron_right</i></div>
-        <div class="sub-list-item" onclick="window.open('https://drive.google.com/file/d/1d84lGgWJuSJUh3F-AJThTIq-B-t9usRd/view')"><span>🍂 Autumn Course</span><i class="material-icons">chevron_right</i></div>
-        <div class="sub-list-item" onclick="window.open('https://drive.google.com/file/d/1YpcJG6XhzOfaR_e0iDOY0y2yXt5f0t8S/view')"><span>❄️ Winter Course</span><i class="material-icons">chevron_right</i></div>
     </div>
 </div>
 
 <script>
-    /* =========================================================================
-       [실제 운영] 구글 시트 웹 게시 데이터 기반 안면 인식 엔진
-    ========================================================================== */
-    // 사용자가 제공한 '웹에 게시'용 CSV 주소 적용
-    const SHEET_PUB_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRjdw6b40uOKNdnSDIL0Hmz_5wiRsJV6WznPvR_fNAmneePy-JcE6DIlC5E_Asdhb-jGeh_01VzR8H-/pub?output=csv";
+    // 제공해주신 '웹에 게시'용 CSV 주소
+    const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRjdw6b40uOKNdnSDIL0Hmz_5wiRsJV6WznPvR_fNAmneePy-JcE6DIlC5E_Asdhb-jGeh_01VzR8H-/pub?output=csv";
     
     let faceMatcher = null;
-    let cameraStream = null;
     let isProcessing = false;
 
-    // 1. 게시된 CSV로부터 회원 얼굴 데이터 학습
-    async function loadMemberDataFromSheet() {
+    // 구글 드라이브 링크를 이미지 파일 주소로 변환하는 함수
+    function fixDriveUrl(url) {
+        if (url.includes('drive.google.com')) {
+            const id = url.split('/d/')[1]?.split('/')[0];
+            return id ? `https://docs.google.com/uc?export=view&id=${id}` : url;
+        }
+        return url;
+    }
+
+    async function loadData() {
         const status = document.getElementById('face-status');
         try {
-            status.innerText = "데이터 서버 연결 중...";
-            const response = await fetch(SHEET_PUB_URL);
-            const csvText = await response.text();
-            
-            const rows = csvText.split('\n').slice(1);
-            const labeledDescriptors = [];
+            const res = await fetch(SHEET_URL);
+            const data = await res.text();
+            const rows = data.split('\n').map(r => r.split(',')).slice(1);
+            const labeled = [];
 
-            for (let row of rows) {
-                const cols = row.split(',').map(c => c.replace(/"/g, '').trim());
-                if (cols.length < 2) continue;
-                
-                const name = cols[0];
-                const imgUrl = cols[1];
+            for (const row of rows) {
+                if (row.length < 2) continue;
+                const name = row[0].replace(/"/g, '').trim();
+                const rawUrl = row[1].replace(/"/g, '').trim();
+                const imgUrl = fixDriveUrl(rawUrl);
 
                 try {
-                    // 시트에 있는 사진 URL에서 얼굴 특징(Descriptor) 추출
                     const img = await faceapi.fetchImage(imgUrl);
-                    const detection = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
-                                                .withFaceLandmarks()
-                                                .withFaceDescriptor();
-                    if (detection) {
-                        labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [detection.descriptor]));
-                    }
-                } catch (e) { console.warn(`${name} 회원 사진 처리 실패`); }
+                    const det = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+                    if (det) labeled.push(new faceapi.LabeledFaceDescriptors(name, [det.descriptor]));
+                } catch (e) { console.error(name + " 사진 로드 실패"); }
             }
 
-            if (labeledDescriptors.length === 0) throw new Error("학습할 데이터 없음");
-            
-            faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.6);
-            status.innerText = "분석 완료. 카메라를 응시해 주세요.";
-            startRealtimeDetection();
+            if (labeled.length === 0) throw new Error("분석 가능한 사진 없음");
+            faceMatcher = new faceapi.FaceMatcher(labeled, 0.6);
+            status.innerText = "스캔 중... 얼굴을 맞춰주세요.";
+            startScan();
         } catch (err) {
-            status.innerHTML = "데이터 연동 실패.<br><small>웹에 게시 설정 및 데이터 형식을 확인하세요.</small>";
+            status.innerHTML = "연동 실패: 시트 첫 줄(제목)과<br>데이터(이름, 사진URL)를 확인하세요.";
         }
     }
 
-    // 2. 실제 카메라 피드와 학습 데이터 실시간 대조
-    async function startRealtimeDetection() {
+    async function startScan() {
         const video = document.getElementById('video-feed');
-        const interval = setInterval(async () => {
+        setInterval(async () => {
             if (isProcessing || !faceMatcher) return;
-
-            const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-                                            .withFaceLandmarks()
-                                            .withFaceDescriptors();
-
-            if (detections.length > 0) {
+            const det = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
+            if (det.length > 0) {
                 isProcessing = true;
-                const bestMatch = faceMatcher.findBestMatch(detections[0].descriptor);
-                const distance = bestMatch.distance;
-                const matchRate = Math.round((1 - distance) * 100);
-
-                // 62% 이상일 때만 결과 팝업 표시
-                if (matchRate >= 62) {
-                    clearInterval(interval);
-                    showRealResult(bestMatch.label, matchRate);
-                } else {
-                    isProcessing = false;
-                }
+                const match = faceMatcher.findBestMatch(det[0].descriptor);
+                const rate = Math.round((1 - match.distance) * 100);
+                if (rate > 60) showResult(match.label, rate);
+                else isProcessing = false;
             }
         }, 1000);
     }
 
-    function showRealResult(name, rate) {
+    function showResult(name, rate) {
         const popup = document.getElementById('match-popup');
-        const rateText = document.getElementById('match-rate');
-        const labelText = document.getElementById('match-label');
-        const btn = document.getElementById('match-btn');
-        const photo = document.getElementById('match-member-photo');
-
         popup.style.display = 'flex';
-        rateText.innerText = `매치율 ${rate}%`;
-        photo.src = "https://via.placeholder.com/150/8E7958/FFFFFF?text=" + encodeURIComponent(name);
-
-        if (rate >= 70) {
-            labelText.innerText = "“유력함”";
-            btn.innerText = "접속 승인";
-            btn.style.backgroundColor = "var(--primary-color)";
-            btn.onclick = () => {
-                stopCamera();
+        document.getElementById('match-rate').innerText = `매치율 ${rate}%`;
+        document.getElementById('match-label').innerText = name === 'unknown' ? '등록되지 않은 인원' : `환영합니다, ${name}님`;
+        const btn = document.getElementById('match-btn');
+        btn.innerText = rate >= 70 ? "접속 승인" : "재시도";
+        btn.onclick = () => {
+            if (rate >= 70) {
                 document.getElementById('auth-overlay').style.display = 'none';
                 document.getElementById('main-app').style.display = 'flex';
-            };
-        } else {
-            labelText.innerText = "“추정됨”";
-            btn.innerText = "재시도";
-            btn.style.backgroundColor = "#555";
-            btn.onclick = () => location.reload();
-        }
+            } else location.reload();
+        };
     }
 
-    // [기본 UI 제어 및 인증 로직]
     async function showAuthStep(step) {
         document.getElementById('auth-main').style.display = 'none';
-        if(step === 'face') {
+        if (step === 'face') {
             document.getElementById('auth-face').style.display = 'flex';
-            try {
-                // face-api 모델 로드
-                await Promise.all([
-                    faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/'),
-                    faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/'),
-                    faceapi.nets.faceRecognitionNet.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/')
-                ]);
-                cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
-                document.getElementById('video-feed').srcObject = cameraStream;
-                loadMemberDataFromSheet();
-            } catch (e) { alert("카메라를 켤 수 없습니다."); }
+            const modelUrl = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+            await faceapi.nets.tinyFaceDetector.loadFromUri(modelUrl);
+            await faceapi.nets.faceLandmark68Net.loadFromUri(modelUrl);
+            await faceapi.nets.faceRecognitionNet.loadFromUri(modelUrl);
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            document.getElementById('video-feed').srcObject = stream;
+            loadData();
         } else {
             document.getElementById('auth-code').style.display = 'flex';
         }
     }
-
-    function stopCamera() { if(cameraStream) cameraStream.getTracks().forEach(t => t.stop()); }
-    
-    function checkCode() {
-        const val = document.getElementById('access-code').value.trim().toLowerCase();
-        if(["foryou", "for you", "포유", "포 유"].includes(val)) {
-            document.getElementById('auth-overlay').style.display = 'none';
-            document.getElementById('main-app').style.display = 'flex';
-        } else alert("인증 코드가 일치하지 않습니다.");
-    }
-
     function openSub(id) { document.getElementById('main-app').style.display='none'; document.getElementById('sub-'+id).style.display='flex'; }
     function closeSub() { document.querySelectorAll('.sub-screen').forEach(s=>s.style.display='none'); document.getElementById('main-app').style.display='flex'; }
-    function openTour() { document.getElementById('bottom-sheet-overlay').style.display='block'; setTimeout(()=>document.getElementById('bottom-sheet').style.bottom='0',50); }
-    function closeTour() { document.getElementById('bottom-sheet').style.bottom='-100%'; setTimeout(()=>document.getElementById('bottom-sheet-overlay').style.display='none',300); }
-    
-    function startSTT(id) {
-        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        rec.lang='ko-KR'; rec.start(); rec.onresult=(e)=>document.getElementById(id).value=e.results[0][0].transcript;
-    }
-    
-    function runValetCheck() { alert("호텔 내 체류 상태를 확인 중입니다."); openSub('concierge'); }
 </script>
 </body>
 </html>
