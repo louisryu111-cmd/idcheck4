@@ -125,7 +125,11 @@
             status.innerHTML = "연동 실패: 시트 첫 줄(제목)과<br>데이터(이름, 사진URL)를 확인하세요.";
         }
     }
-
+// 코드 중간에 이 부분을 넣어 데이터가 어떻게 찍히는지 확인해보세요.
+const rows = data.split('\n').map(r => r.split(','));
+console.log("불러온 전체 데이터:", rows);
+        }
+    }
     async function startScan() {
         const video = document.getElementById('video-feed');
         setInterval(async () => {
