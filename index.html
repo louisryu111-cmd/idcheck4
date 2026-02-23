@@ -81,50 +81,61 @@
         <div style="font-size:22px; margin-bottom:30px; font-weight:300;">반갑습니다, <b id="user-name">회원</b>님.</div>
         
         <div class="menu-grid">
-            <div class="menu-item" onclick="openSub('concierge')"><i class="material-icons">room_service</i><span>Concierge</span></div>
+            <div class="menu-item" onclick="openSub('concierge')"><i class="material-icons">room_service</i><span>Concierge Service</span></div>
             <div class="menu-item" onclick="openSub('hotel')"><i class="material-icons">apartment</i><span>Hotel Service</span></div>
             <div class="menu-item" onclick="window.open('https://www.banyantree.com', '_blank')"><i class="material-icons">event_available</i><span>Booking</span></div>
             <div class="menu-item" onclick="openSub('valet')"><i class="material-icons">directions_car</i><span>Valet</span></div>
         </div>
 
         <div class="footer">
-            COPYRIGHT © BANYAN TREE BUSAN. ALL RIGHTS RESERVED.
+            COPYRIGHT © BANYAN TREE BUSAN HAEUNDAE. ALL RIGHTS RESERVED.
         </div>
     </div>
 
     <div id="sub-concierge" class="sub-screen">
         <div class="back-btn" onclick="closeSub()"><i class="material-icons">arrow_back</i> 뒤로가기</div>
-        <h2 style="margin-bottom:25px;">Concierge</h2>
+        <h2 style="margin-bottom:25px;">Concierge Service</h2>
         <div class="menu-grid">
-            <div class="menu-item"><span>4 Season Tour</span></div>
-            <div class="menu-item"><span>Kids Program</span></div>
-            <div class="menu-item"><span>Car Wash</span></div>
-            <div class="menu-item"><span>Hospital Info</span></div>
+            <div class="menu-item" onclick="openTour()"><i class="material-icons">map</i><span>4 Season Tour</span></div>
+            <div class="menu-item" onclick="alert('Kids 서비스 준비 중')"><i class="material-icons">child_friendly</i><span>Kids</span></div>
+            <div class="menu-item" onclick="alert('세차 예약 서비스')"><i class="material-icons">local_car_wash</i><span>Car Wash</span></div>
+            <div class="menu-item" onclick="alert('병원 정보를 안내합니다.')"><i class="material-icons">medical_services</i><span>Hospital</span></div>
         </div>
     </div>
 
     <div id="sub-hotel" class="sub-screen">
         <div class="back-btn" onclick="closeSub()"><i class="material-icons">arrow_back</i> 뒤로가기</div>
         <h2 style="margin-bottom:25px;">Hotel Service</h2>
-        <div class="menu-grid">
-            <div class="menu-item" onclick="alertLink()"><span>Dining</span></div>
-            <div class="menu-item" onclick="alertLink()"><span>Wellness / Spa</span></div>
-            <div class="menu-item" onclick="alertLink()"><span>Lounge</span></div>
-            <div class="menu-item" onclick="alertLink()"><span>Wedding</span></div>
+    <div class="menu-grid">
+            <div class="menu-item" onclick="alert('Dining 예약')"><i class="material-icons">restaurant</i><span>Dining</span></div>
+            <div class="menu-item" onclick="alert('Lounge 안내')"><i class="material-icons">local_bar</i><span>Lounge</span></div>
+            <div class="menu-item" onclick="alert('Wellness & SPA')"><i class="material-icons">spa</i><span>Wellness</span></div>
+            <div class="menu-item" onclick="alert('Facilities')"><i class="material-icons">pool</i><span>Facilities</span></div>
+            <div class="menu-item" onclick="alert('Kids Club')"><i class="material-icons">child_care</i><span>Kids</span></div>
+            <div class="menu-item" onclick="alert('Event & Wedding')"><i class="material-icons">celebration</i><span>Event & Wedding</span></div>
         </div>
     </div>
+
+    <div id="bottom-sheet-overlay" onclick="closeTour()"></div>
+    <div id="bottom-sheet">
+        <div style="color:var(--primary-color); font-weight:bold; margin-bottom:15px; font-size:18px;">4 Season Tour Drive</div>
+        <div class="sub-list-item" onclick="window.open('https://drive.google.com/file/d/1Ax4O2b49CM5I6-KnMebXjz9r8PHlgUmz/view')"><span>🌸 Spring Course</span><i class="material-icons">chevron_right</i></div>
+        <div class="sub-list-item" onclick="window.open('https://drive.google.com/file/d/1m1nqU2eRtS4YHKAPKqYEekQn7KF0i_sp/view')"><span>🌊 Summer Course</span><i class="material-icons">chevron_right</i></div>
+        <div class="sub-list-item" onclick="window.open('https://drive.google.com/file/d/1d84lGgWJuSJUh3F-AJThTIq-B-t9usRd/view')"><span>🍂 Autumn Course</span><i class="material-icons">chevron_right</i></div>
+        <div class="sub-list-item" onclick="window.open('https://drive.google.com/file/d/1YpcJG6XhzOfaR_e0iDOY0y2yXt5f0t8S/view')"><span>❄️ Winter Course</span><i class="material-icons">chevron_right</i></div>
+    </div>
+</div>
 
     <div id="sub-valet" class="sub-screen">
         <div class="back-btn" onclick="closeSub()"><i class="material-icons">arrow_back</i> 뒤로가기</div>
         <h2 style="margin-bottom:25px;">Valet Service</h2>
-        <div class="menu-grid">
-            <div class="menu-item" onclick="alert('차량 출차 요청이 접수되었습니다.')"><i class="material-icons">hail</i><span>출차 요청</span></div>
-            <div class="menu-item" onclick="alert('현재 차량은 B2 구역 15번 기둥에 주차되어 있습니다.')"><i class="material-icons">where_to_vote</i><span>차량 위치</span></div>
-            <div class="menu-item" onclick="alert('주차 경과 시간: 120분')"><i class="material-icons">timer</i><span>주차 시간</span></div>
-            <div class="menu-item" onclick="alert('발렛 요금: 20,000원')"><i class="material-icons">payments</i><span>요금 정산</span></div>
+       <div style="text-align:center; padding:20px; color:#aaa; font-size:14px; line-height:1.6;">호텔 내 체류 중인 고객님을 위한 전용 출차 서비스입니다.</div>
+        <div class="input-group" style="width:100%;">
+            <input type="text" id="car-num" class="code-input" placeholder="차량번호 전체 입력">
+            <button class="voice-btn" onclick="startSTT('car-num')"><i class="material-icons">mic</i></button>
         </div>
+        <button class="auth-btn" style="width:100%; background:var(--primary-color);" onclick="sendValet()">출차 요청하기</button>
     </div>
-</div>
 
 <script>
     const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRjdw6b40uOKNdnSDIL0Hmz_5wiRsJV6WznPvR_fNAmneePy-JcE6DIlC5E_Asdhb-jGeh_01VzR8H-/pub?output=csv";
@@ -217,8 +228,8 @@
                 const score = Math.round((1 - match.distance) * 100);
                 if (score >= 70 && match.label !== "unknown") {
                     isDetected = true;
-                    // 요청 반영: 80% 이상일 때만 이름 표시
-                    const displayName = (score >= 80) ? match.label : "회원";
+                    // 요청 반영: 76% 이상일 때만 이름 표시
+                    const displayName = (score >= 76) ? match.label : "회원";
                     loginSuccess(displayName);
                     return;
                 }
