@@ -121,31 +121,32 @@
     let faceMatcher = null;
     let isProcessing = false;
 
-    // 구글 드라이브 링크를 이미지 파일 주소로 강제 변환
+// 구글 드라이브 링크를 이미지 파일 주소로 변환하고, '보안 우회(Proxy) 주소'를 덧붙입니다.
     function fixDriveUrl(url) {
         if (!url) return "";
         let cleanUrl = url.replace(/"/g, '').trim();
+        let finalUrl = cleanUrl;
+        
+        // 드라이브 링크인 경우 uc?export=view 포맷으로 변경
         if (cleanUrl.includes('drive.google.com')) {
             const match = cleanUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
             if (match && match[1]) {
-                return `https://docs.google.com/uc?export=view&id=${match[1]}`;
+                finalUrl = `https://docs.google.com/uc?export=view&id=${match[1]}`;
             }
         }
-        return cleanUrl;
+        
+        // idcheck3와 동일하게 작동하도록 CORS 우회 프록시 서버 적용
+        return `https://corsproxy.io/?${encodeURIComponent(finalUrl)}`;
     }
 
     async function loadData() {
         const status = document.getElementById('face-status');
         try {
-            console.log("1. 시트 데이터 가져오기 시작...");
+            console.log("시트 데이터 로드 시작...");
             const res = await fetch(SHEET_URL);
             const csvText = await res.text();
             
-            // 데이터 파싱 (쉼표 기준)
             const rows = csvText.split('\n').map(r => r.split(','));
-            console.log("2. 불러온 원본 행 개수:", rows.length);
-            console.log("3. 데이터 샘플(첫 행 제외):", rows[1]);
-
             const labeledDescriptors = [];
 
             // 1행(제목) 건너뛰고 2행부터 분석
@@ -153,13 +154,15 @@
                 const row = rows[i];
                 if (row.length < 2) continue;
 
+                // A열 데이터가 비어있으면 스킵 (이름 필수!)
                 const name = row[0].replace(/"/g, '').trim();
+                if (!name) continue; 
+
                 const rawUrl = row[1].replace(/"/g, '').trim();
                 const imgUrl = fixDriveUrl(rawUrl);
 
-                console.log(`- ${name}님 분석 시도 중... URL: ${imgUrl}`);
-
                 try {
+                    // 우회된 주소를 통해 이미지 로드
                     const img = await faceapi.fetchImage(imgUrl);
                     const detection = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
                                                 .withFaceLandmarks()
@@ -167,26 +170,24 @@
                     
                     if (detection) {
                         labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [detection.descriptor]));
-                        console.log(`   [성공] ${name}님 얼굴 특징 추출 완료`);
-                    } else {
-                        console.warn(`   [실패] ${name}님 사진에서 얼굴을 찾을 수 없음`);
+                        console.log(`[성공] ${name} 회원 정보 등록`);
                     }
                 } catch (imgErr) {
-                    console.error(`   [오류] ${name}님 이미지 로드 실패:`, imgErr);
+                    console.error(`[실패] ${name} 이미지 로드 오류:`, imgErr);
                 }
             }
 
             if (labeledDescriptors.length === 0) {
-                throw new Error("유효한 회원 데이터가 없습니다.");
+                throw new Error("분석할 수 있는 유효한 회원 데이터가 없습니다.");
             }
 
             faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.6);
-            status.innerText = "스캔 준비 완료. 카메라를 정면으로 봐주세요.";
+            status.innerText = "스캔 준비 완료. 얼굴을 보여주세요.";
             startRealtimeDetection();
 
         } catch (err) {
-            console.error("최종 에러:", err);
-            status.innerHTML = `<span style="color:#ff6b6b">연동 실패</span><br><small>시트 구조나 사진 권한을 확인하세요.</small>`;
+            console.error(err);
+            status.innerHTML = `<span style="color:#ff6b6b">연동 실패</span><br><small>시트 A열에 이름을 반드시 입력하세요.</small>`;
         }
     }
 
