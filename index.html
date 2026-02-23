@@ -67,7 +67,7 @@
 
         <div id="auth-face" class="auth-screen" style="display:none; padding-top: 8vh;">
             <div style="width:85%; font-size:12px; color:var(--primary-color); text-align:center; margin-bottom:20px; line-height:1.5;">
-                해당 서비스는 호텔의 개인정보 이용 방침에 사전 동의하신 분에 한하여 <br> 안면 인식 로그인을 이용해 주시기 바랍니다.
+                해당 서비스는 호텔의 개인정보 이용 방침에 사전 동의하신 분만 <br> 안면 인식 로그인을 이용해 주시기 바랍니다.
             </div>
             <div class="camera-container">
                 <video id="video-feed" autoplay muted playsinline></video>
@@ -101,7 +101,6 @@
             <div class="menu-item" onclick="window.open('https://www.banyantree.com', '_blank')"><i class="material-icons">event_available</i><span>Booking</span></div>
             <div class="menu-item" onclick="openSub('valet')"><i class="material-icons">directions_car</i><span>Valet</span></div>
         </div>
-
         <div class="footer">COPYRIGHT © BANYAN TREE BUSAN. ALL RIGHTS RESERVED.</div>
     </div>
 
@@ -192,7 +191,7 @@
             const video = document.getElementById('video-feed');
             video.srcObject = stream;
             video.onloadedmetadata = () => video.play();
-            document.getElementById('face-status').innerText = "부팅 완료. 시작 버튼을 누르세요.";
+            document.getElementById('face-status').innerText = "부팅 완료. <br> 시작 버튼을 누르세요.";
         } catch (e) { log("카메라 에러"); }
     }
 
