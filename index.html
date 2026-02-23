@@ -37,7 +37,9 @@
         .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         .menu-item { background-color: var(--card-bg); border-radius: 15px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #333; cursor: pointer; text-align: center; padding: 5px; }
         .menu-item i { font-size: 35px; color: var(--primary-color); margin-bottom: 10px; }
-        .footer { margin-top: auto; padding: 20px 0; text-align: center; font-size: 11px; color: #555; letter-spacing: 1px; }
+        
+        /* 수정됨: 하단 Copyright 문구를 위로 올리기 위해 bottom padding 추가 */
+        .footer { margin-top: auto; padding: 20px 0 10vh 0; text-align: center; font-size: 11px; color: #555; letter-spacing: 1px; }
         
         .sub-screen { display: none; position: absolute; inset: 0; background-color: var(--bg-color); z-index: 500; padding: 25px 20px; flex-direction: column; overflow-y: auto; }
         .back-btn { color: var(--primary-color); display: flex; align-items: center; cursor: pointer; margin-bottom: 20px; }
@@ -131,7 +133,7 @@
     <div id="sub-valet" class="sub-screen">
         <div class="back-btn" onclick="closeSub()"><i class="material-icons">arrow_back</i> 뒤로가기</div>
         <h2 style="margin-bottom:10px;">Valet Service</h2>
-        <p style="font-size:13px; color:#aaa; line-height:1.6; margin-bottom:25px;">호텔 내 체류중인 고객님을 위한 출차 전용 서비스입니다. 호텔내에 위치 하실때 서비스가 제공됩니다.</p>
+        <p style="font-size:13px; color:#aaa; line-height:1.6; margin-bottom:25px;">호텔 내 체류중인 고객님을 위한 출차 전용 서비스입니다. <br> 호텔내에 위치 하실때 서비스가 제공됩니다.</p>
         <div class="input-group" style="width:100%;">
             <input type="text" id="car-number" class="styled-input" placeholder="차량번호를 입력하세요 (예: 12가 3456)">
             <i class="material-icons mic-btn" onclick="startVoiceRecognition('car-number')">mic</i>
@@ -191,7 +193,7 @@
             const video = document.getElementById('video-feed');
             video.srcObject = stream;
             video.onloadedmetadata = () => video.play();
-            document.getElementById('face-status').innerText = "부팅 완료. <br> 시작 버튼을 누르세요.";
+            document.getElementById('face-status').innerHTML = "부팅 완료. 시작 버튼을 누르세요.";
         } catch (e) { log("카메라 에러"); }
     }
 
@@ -285,7 +287,7 @@
     function requestValet() {
         const carNum = document.getElementById('car-number').value;
         if(!carNum) { alert("차량 번호를 입력해주세요."); return; }
-        alert(`${carNum} 차량의 출차 요청이 시스템으로 전송되었습니다. 차량은 약 10분 뒤 호텔 1층에 준비됩니다.`);
+        alert(`${carNum} 차량의 출차 요청이 시스템으로 전송되었습니다. <br> 차량은 약 10분 뒤 호텔 1층에 준비됩니다.`);
     }
 </script>
 </body>
