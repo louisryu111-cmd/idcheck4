@@ -67,7 +67,7 @@
 
         <div id="auth-face" class="auth-screen" style="display:none; padding-top: 8vh;">
             <div style="width:85%; font-size:12px; color:var(--primary-color); text-align:center; margin-bottom:20px; line-height:1.5;">
-                해당 서비스는 호텔의 개인정보 이용 방침에 사전 동의하신 분만 <br> 안면 인식 로그인을 이용해 주시기 바랍니다.
+                해당 서비스는 호텔의 개인정보 이용 방침에 사전 동의하신 분에 한하여 <br> 안면 인식 로그인을 이용해 주시기 바랍니다.
             </div>
             <div class="camera-container">
                 <video id="video-feed" autoplay muted playsinline></video>
@@ -101,6 +101,7 @@
             <div class="menu-item" onclick="window.open('https://www.banyantree.com', '_blank')"><i class="material-icons">event_available</i><span>Booking</span></div>
             <div class="menu-item" onclick="openSub('valet')"><i class="material-icons">directions_car</i><span>Valet</span></div>
         </div>
+
         <div class="footer">COPYRIGHT © BANYAN TREE BUSAN. ALL RIGHTS RESERVED.</div>
     </div>
 
@@ -124,4 +125,169 @@
             <div class="menu-item" onclick="alert('홈페이지 구축 후 링크 연결 예정입니다.')"><i class="material-icons">spa</i><span>Wellness</span></div>
             <div class="menu-item" onclick="alert('홈페이지 구축 후 링크 연결 예정입니다.')"><i class="material-icons">pool</i><span>Facilities</span></div>
             <div class="menu-item" onclick="alert('홈페이지 구축 후 링크 연결 예정입니다.')"><i class="material-icons">child_care</i><span>Kids</span></div>
-            <div class="menu-item" onclick="alert('홈페이지 구축 후 링크 연결 예정입니다.')">
+            <div class="menu-item" onclick="alert('홈페이지 구축 후 링크 연결 예정입니다.')"><i class="material-icons">celebration</i><span>Event & Wedding</span></div>
+        </div>
+    </div>
+
+    <div id="sub-valet" class="sub-screen">
+        <div class="back-btn" onclick="closeSub()"><i class="material-icons">arrow_back</i> 뒤로가기</div>
+        <h2 style="margin-bottom:10px;">Valet Service</h2>
+        <p style="font-size:13px; color:#aaa; line-height:1.6; margin-bottom:25px;">호텔 내 체류중인 고객님을 위한 출차 전용 서비스입니다. 호텔내에 위치 하실때 서비스가 제공됩니다.</p>
+        <div class="input-group" style="width:100%;">
+            <input type="text" id="car-number" class="styled-input" placeholder="차량번호를 입력하세요 (예: 12가 3456)">
+            <i class="material-icons mic-btn" onclick="startVoiceRecognition('car-number')">mic</i>
+        </div>
+        <button class="auth-btn" style="width:100%; background:var(--primary-color); margin-top:10px;" onclick="requestValet()">출차 요청하기</button>
+    </div>
+
+    <div id="bottom-sheet-overlay" onclick="closeTour()"></div>
+    <div id="bottom-sheet">
+        <div style="color:var(--primary-color); font-weight:bold; margin-bottom:20px; font-size:18px;">4 Season Tour Drive</div>
+        <div class="sub-list-item" onclick="window.open('https://drive.google.com/file/d/1Ax4O2b49CM5I6-KnMebXjz9r8PHlgUmz/view')"><span>🌸 Spring Course</span><i class="material-icons">chevron_right</i></div>
+        <div class="sub-list-item" onclick="window.open('https://drive.google.com/file/d/1m1nqU2eRtS4YHKAPKqYEekQn7KF0i_sp/view')"><span>🌊 Summer Course</span><i class="material-icons">chevron_right</i></div>
+        <div class="sub-list-item" onclick="window.open('https://drive.google.com/file/d/1d84lGgWJuSJUh3F-AJThTIq-B-t9usRd/view')"><span>🍂 Autumn Course</span><i class="material-icons">chevron_right</i></div>
+        <div class="sub-list-item" onclick="window.open('https://drive.google.com/file/d/1YpcJG6XhzOfaR_e0iDOY0y2yXt5f0t8S/view')"><span>❄️ Winter Course</span><i class="material-icons">chevron_right</i></div>
+        <button class="auth-btn" style="width:100%; margin-top:15px; background:#333; border:none;" onclick="closeTour()">닫기</button>
+    </div>
+</div>
+
+<script>
+    const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRjdw6b40uOKNdnSDIL0Hmz_5wiRsJV6WznPvR_fNAmneePy-JcE6DIlC5E_Asdhb-jGeh_01VzR8H-/pub?output=csv";
+    let faceMatcher = null;
+    let isDetected = false;
+    let recognitionTimeout = null;
+
+    function log(m) {
+        const d = document.getElementById('debug-log');
+        if(d) { d.innerHTML += `> ${m}<br>`; d.scrollTop = d.scrollHeight; }
+    }
+
+    function fixUrl(url) {
+        if (!url) return "";
+        let id = "";
+        const clean = url.replace(/"/g, '').trim();
+        if (clean.includes('id=')) id = clean.split('id=')[1].split('&')[0];
+        else if (clean.includes('/d/')) id = clean.split('/d/')[1].split('/')[0];
+        if (id) return `https://images.weserv.nl/?url=${encodeURIComponent(`https://docs.google.com/uc?export=view&id=${id}`)}`;
+        return clean;
+    }
+
+    async function showAuthStep(step) {
+        document.getElementById('auth-main').style.display = 'none';
+        document.getElementById('auth-face').style.display = 'none';
+        document.getElementById('auth-code').style.display = 'none';
+        if (step === 'face') { document.getElementById('auth-face').style.display = 'flex'; initFaceAuth(); }
+        else { document.getElementById('auth-code').style.display = 'flex'; }
+    }
+
+    async function initFaceAuth() {
+        try {
+            const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+            await Promise.all([
+                faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+                faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+            ]);
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+            const video = document.getElementById('video-feed');
+            video.srcObject = stream;
+            video.onloadedmetadata = () => video.play();
+            document.getElementById('face-status').innerText = "부팅 완료. 시작 버튼을 누르세요.";
+        } catch (e) { log("카메라 에러"); }
+    }
+
+    async function beginFaceRecognition() {
+        document.getElementById('start-matching-btn').style.display = 'none';
+        document.getElementById('face-status').innerText = "분석 중...";
+        
+        recognitionTimeout = setTimeout(() => {
+            if (!isDetected) {
+                document.getElementById('face-status').innerHTML = "<span style='color:white;'>인식 불일치</span>";
+                setTimeout(() => { showAuthStep('code'); }, 1500);
+            }
+        }, 7000);
+
+        loadData();
+    }
+
+    async function loadData() {
+        try {
+            const res = await fetch(SHEET_URL + "&t=" + Date.now());
+            const text = await res.text();
+            const rows = text.split('\n').slice(1);
+            const labeled = [];
+            for (let row of rows) {
+                const col = row.split(',');
+                if (col.length < 2) continue;
+                const name = col[0].trim();
+                const url = fixUrl(col[1].trim());
+                if (!name || !url) continue;
+                log(`분석 중...`);
+                try {
+                    const img = await faceapi.fetchImage(url);
+                    const det = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+                    if (det) labeled.push(new faceapi.LabeledFaceDescriptors(name, [det.descriptor]));
+                } catch (e) {}
+            }
+            faceMatcher = new faceapi.FaceMatcher(labeled, 0.45);
+            startRecognition();
+        } catch (e) { log("데이터 연동 실패"); }
+    }
+
+    async function startRecognition() {
+        const video = document.getElementById('video-feed');
+        const scan = async () => {
+            if (isDetected || !faceMatcher) return;
+            const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
+            if (detections.length > 0) {
+                const match = faceMatcher.findBestMatch(detections[0].descriptor);
+                const score = Math.round((1 - match.distance) * 100);
+                if (score >= 70 && match.label !== "unknown") {
+                    isDetected = true;
+                    clearTimeout(recognitionTimeout);
+                    const displayName = (score >= 75) ? match.label : "회원";
+                    loginSuccess(displayName);
+                    return;
+                }
+            }
+            requestAnimationFrame(scan);
+        };
+        scan();
+    }
+
+    function loginSuccess(name) {
+        document.getElementById('auth-overlay').style.display = 'none';
+        document.getElementById('main-app').style.display = 'flex';
+        document.getElementById('user-name').innerText = name;
+    }
+
+    function checkCode() {
+        const val = document.getElementById('access-code').value.trim().toLowerCase();
+        const validCodes = ["포유", "포 유", "foryou", "for you"];
+        if (validCodes.includes(val)) loginSuccess("회원");
+        else alert("코드가 일치하지 않습니다.");
+    }
+
+    function startVoiceRecognition(targetId) {
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'ko-KR';
+        recognition.start();
+        recognition.onresult = (event) => {
+            document.getElementById(targetId).value = event.results[0][0].transcript;
+            if(targetId === 'access-code') checkCode();
+        };
+    }
+
+    function openSub(id) { document.getElementById('main-app').style.display='none'; document.getElementById('sub-'+id).style.display='flex'; }
+    function closeSub() { document.querySelectorAll('.sub-screen').forEach(s=>s.style.display='none'); document.getElementById('main-app').style.display='flex'; }
+    function openTour() { document.getElementById('bottom-sheet-overlay').style.display='block'; document.getElementById('bottom-sheet').style.display='block'; }
+    function closeTour() { document.getElementById('bottom-sheet-overlay').style.display='none'; document.getElementById('bottom-sheet').style.display='none'; }
+    
+    function requestValet() {
+        const carNum = document.getElementById('car-number').value;
+        if(!carNum) { alert("차량 번호를 입력해주세요."); return; }
+        alert(`${carNum} 차량의 출차 요청이 시스템으로 전송되었습니다. 차량은 약 10분 뒤 호텔 1층에 준비됩니다.`);
+    }
+</script>
+</body>
+</html>
