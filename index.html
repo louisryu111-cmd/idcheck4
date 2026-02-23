@@ -103,8 +103,8 @@
         <div class="menu-grid">
             <div class="menu-item" onclick="openTour()"><i class="material-icons">map</i><span>4 Season Tour</span></div>
             <div class="menu-item" onclick="alert('Kids 서비스 준비 중')"><i class="material-icons">child_friendly</i><span>Kids</span></div>
-            <div class="menu-item" onclick="alert('세차 예약 서비스')"><i class="material-icons">local_car_wash</i><span>Car Wash</span></div>
-            <div class="menu-item" onclick="alert('병원 정보를 안내합니다.')"><i class="material-icons">medical_services</i><span>Hospital</span></div>
+            <div class="menu-item" onclick="CarWash('CarWash 서비스 준비 중')"><i class="material-icons">local_car_wash</i><span>Car Wash</span></div>
+            <div class="menu-item" onclick="window.open('https://www.banyantree.com', '_blank')"><i class="material-icons">medical_services</i><span>Hospital</span></div>
         </div>
     </div>
 
@@ -124,7 +124,7 @@
     <div id="sub-valet" class="sub-screen">
         <div class="back-btn" onclick="closeSub()"><i class="material-icons">arrow_back</i> 뒤로가기</div>
         <h2 style="margin-bottom:10px;">Valet Service</h2>
-        <p style="font-size:13px; color:#aaa; line-height:1.6; margin-bottom:25px;">호텔 내 체류중인 고객님을 위한 전용 출차 서비스입니다. 호텔내에 위치 하실때 서비스가 제공됩니다.</p>
+        <p style="font-size:13px; color:#aaa; line-height:1.6; margin-bottom:25px;">호텔 내 체류중인 고객님을 위한 출차 전용 서비스입니다. 호텔내에 위치 하실때 서비스가 제공됩니다.</p>
         
         <div class="input-group" style="width:100%;">
             <input type="text" id="car-number" class="styled-input" placeholder="차량번호를 입력하세요 (예: 12가 3456)">
@@ -132,10 +132,7 @@
         </div>
         
         <button class="auth-btn" style="width:100%; background:var(--primary-color); margin-top:10px;" onclick="requestValet()">출차 요청하기</button>
-        
-        <div class="menu-grid" style="margin-top:30px; opacity:0.7;">
-            <div class="menu-item" onclick="alert('현재 차량 위치: B2 구역 15번')"><i class="material-icons">where_to_vote</i><span>위치 확인</span></div>
-            <div class="menu-item" onclick="alert('요금 정산 화면으로 이동합니다.')"><i class="material-icons">payments</i><span>요금 정산</span></div>
+
         </div>
     </div>
 
