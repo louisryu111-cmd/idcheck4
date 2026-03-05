@@ -246,7 +246,7 @@
                 if (score >= 70 && match.label !== "unknown") {
                     isDetected = true;
                     clearTimeout(recognitionTimeout);
-                    const displayName = (score >= 75) ? match.label : "회원";
+                    const displayName = (score >= 99) ? match.label : "회원";
                     loginSuccess(displayName);
                     return;
                 }
